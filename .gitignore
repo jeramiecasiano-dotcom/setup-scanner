@@ -1,0 +1,13 @@
+.env
+*.env
+*.key
+*.pem
+*.log
+*.lock
+*.pid
+*.hb
+*.tmp
+__pycache__/
+data/
+logs/
+secrets/

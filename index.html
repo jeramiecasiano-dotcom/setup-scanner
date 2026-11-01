@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Setup Scanner</title>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Scanner"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1b2a3a"><meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<style>
+:root{--bg:#14141f;--card:#1f1f2e;--card2:#25253a;--txt:#f2f2f5;--mut:#9a9ab0;--line:#2c2c42;--acc:#2f6f9f;--up:#3fb27f;--dn:#e0574d;--warn:#f1c40f;--aplus:#f1c40f;--a:#4f9bd8;--b:#8a8aa3}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.35;background:var(--bg);color:var(--txt);padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;background:#1b2a3a;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;z-index:10;border-bottom:1px solid #2a3d52}
+.hr{display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{font-size:18px;margin:0;letter-spacing:.2px}.sub{font-size:12px;opacity:.85}
+.clock{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:15px;font-weight:700}
+button{background:#fff;color:#1b2a3a;border:0;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer;font-size:13px}
+.pill{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 9px;border-radius:999px;vertical-align:1px}
+.p-open{background:#1f7a52;color:#e8fff3}.p-closed{background:#3a3a52;color:#d7d7e6}.p-warn{background:#8a6d0b;color:#fff6d1}.p-bad{background:#a32a22;color:#fff}
+.fresh{margin-top:6px;font-size:12.5px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:0}
+.d-g{background:#3fb27f}.d-y{background:#f1c40f}.d-r{background:#e0574d}.d-n{background:#7b7b92}
+.note{margin:10px 14px 0;padding:11px 13px;border-radius:12px;background:#3a3320;border:1px solid #6b5d33;color:#f3e3b5;font-size:13.5px;line-height:1.4}
+.note b{color:#fff3cf}.note small{display:block;margin-top:5px;color:#d9c88f;font-size:12px}
+.banner{margin:10px 14px 0;padding:10px 13px;border-radius:12px;font-size:13.5px}
+.b-bad{background:#3d1d1d;border:1px solid #7a3030;color:#ffd0cc}.b-info{background:#1c2b3a;border:1px solid #2f4a63;color:#cfe3f5}
+.tabs{display:flex;gap:6px;padding:12px 14px 4px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 16px;border-radius:999px;background:#1d1d2c;border:1px solid #33334c;color:#b8b8cc;cursor:pointer;font-weight:650;font-size:14px;white-space:nowrap}
+.tab.on{background:linear-gradient(180deg,#3b86bd,#25608c);border-color:#4b97cc;color:#fff;box-shadow:0 2px 10px rgba(47,111,159,.35)}
+.pane{display:none}.pane.on{display:block}
+.bar{display:flex;gap:5px;flex-wrap:wrap;padding:6px 14px 0;align-items:center}
+.bar .lbl{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;width:42px}
+.chip{padding:5px 10px;border-radius:999px;background:#2a2a3d;color:var(--txt);font-size:12.5px;cursor:pointer;border:1px solid #3a3a52;user-select:none;white-space:nowrap}
+.chip.on{background:var(--acc);border-color:#4b97cc}.chip small{opacity:.7;margin-left:3px}
+select{background:#2a2a3d;color:var(--txt);border:1px solid #3a3a52;border-radius:999px;padding:6px 10px;font-size:13px}
+.count{padding:8px 14px 0;font-size:12px;color:var(--mut)}
+.grid{padding:8px 14px 24px;display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;border:1px solid var(--line);border-left:5px solid #6b6b80;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.g-Ap{border-left-color:var(--aplus);background:linear-gradient(180deg,rgba(241,196,15,.10),rgba(241,196,15,.02) 55%),var(--card)}
+.g-A{border-left-color:var(--a)}.g-B{border-left-color:var(--b)}
+.card.pass{opacity:.62}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tk{font-size:20px;font-weight:800;letter-spacing:.3px}
+.tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.6px;padding:2px 8px;border-radius:999px;margin-left:5px;vertical-align:3px}
+.gr-Ap{background:var(--aplus);color:#1a1300}.gr-A{background:var(--a);color:#06121c}.gr-B{background:#4b4b60;color:#e5e5ee}
+.st-FIRED{background:#e0574d;color:#fff}.st-WATCH{background:#2f6f9f;color:#fff}.st-PASS{background:#3a3a52;color:#c9c9d8}
+.dir{font-weight:800;font-size:14px}.up{color:var(--up)}.dn{color:var(--dn)}
+.stype{font-size:12.5px;color:#cfcfe0;margin-top:2px}
+.trig{font-size:12.5px;color:#d6d6e4;margin:8px 0 2px;line-height:1.4}.trig b{color:#fff}
+.px{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 4px}
+.px div{background:var(--card2);border-radius:9px;padding:6px 8px;text-align:center}
+.px span{display:block;font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px}
+.px b{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:15px}
+.px .e b{color:#fff}.px .s b{color:#ff9d96}.px .t b{color:#8be0b4}.px .r b{color:#ffe27a}
+.px small{display:block;font-size:10px;color:var(--mut)}
+.k{margin-top:8px;font-size:12.5px;padding:7px 9px;border-radius:9px;background:#1a2430;border:1px solid #2b3d50;color:#cfe3f5}
+.k.over{background:#2a2420;border-color:#5a4632;color:#f3d9b8}.k.none{background:#232330;border-color:#33334a;color:var(--mut)}
+.k small{display:block;color:var(--mut);font-size:11px;margin-top:2px}
+.ag{margin-top:9px;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px}
+.dots{display:flex;gap:3px}.dots i{width:12px;height:12px;border-radius:3px;background:#3a3a52;display:block}
+.dots i.agree{background:var(--up)}.dots i.oppose{background:var(--dn)}.dots i.neutral{background:#a89a4f}.dots i.na{background:#3a3a52;border:1px dashed #6b6b80}
+.ag .chev{margin-left:auto;color:var(--mut);font-size:12px}
+.srcs{display:none;margin-top:6px;border-top:1px solid var(--line);padding-top:6px}.srcs.on{display:block}
+.src{font-size:12px;padding:4px 0;color:#cfcfe0;display:flex;gap:7px}.src .m{flex:0 0 14px;font-weight:800}
+.src.agree .m{color:var(--up)}.src.oppose .m{color:var(--dn)}.src.neutral .m{color:#d6c25f}.src.na .m{color:#7b7b92}
+.src b{color:#fff;font-weight:650}.src span{color:#b5b5c9}
+.out{margin-top:8px;font-size:12px;padding:6px 9px;border-radius:9px;background:#232330;color:#cfcfe0}
+.out.win{background:#17301f;color:#bff0d3}.out.loss{background:#341b1b;color:#ffc9c4}
+.pr{margin-top:6px;font-size:12px;color:#d0a8a4}
+.foot{font-size:11.5px;color:var(--mut);margin-top:7px;display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.empty{margin:30px 14px;padding:22px;border:1px dashed #3a3a52;border-radius:14px;color:var(--mut);text-align:center;font-size:14px}
+/* levels */
+.lv h3{margin:0 0 2px;font-size:19px}.lv .meta{font-size:12px;color:var(--mut)}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}
+.kv div{background:var(--card2);border-radius:9px;padding:6px 8px}.kv span{display:block;font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px}
+.kv b{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:14px}.kv small{font-size:10px;color:var(--mut)}
+.lad{margin-top:6px}.row{display:flex;justify-content:space-between;font-size:12.5px;padding:4px 8px;border-radius:6px;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.row:nth-child(odd){background:rgba(255,255,255,.025)}.row em{font-style:normal;font-family:-apple-system,"Inter",sans-serif;color:#b5b5c9}
+.row.spot{background:#2f6f9f;color:#fff;font-weight:800}.row.spot em{color:#fff}
+.row.w3 b{color:#ffe27a}.row.gx b{color:#8be0b4}
+table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+.s-ok{color:#8be0b4}.s-error{color:#ff9d96}.s-stale,.s-saved,.s-missing{color:#f1c40f}.s-unavailable{color:#9a9ab0}
+.sec{margin:14px 14px 6px;font-size:15px;font-weight:700}.box{margin:0 14px 10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px}
+.box p{margin:4px 0}.mut{color:var(--mut)}
+footer{padding:6px 16px 28px;font-size:11.5px;color:var(--mut);line-height:1.5}
+@media (min-width:900px){.grid{grid-template-columns:repeat(auto-fill,minmax(380px,1fr))}header{padding-left:24px;padding-right:24px}.note,.banner,.bar,.tabs,.grid,.count,.sec,.box{margin-left:max(14px,calc((100vw - 1500px)/2));margin-right:max(14px,calc((100vw - 1500px)/2))}.bar,.tabs,.grid,.count{padding-left:0;padding-right:0}.grid{margin-top:0}}
+</style></head><body>
+<header>
+ <div class="hr"><div><h1>Setup Scanner</h1><div class="sub">SPY · QQQ · watchlist · paper only</div></div>
+ <div style="text-align:right"><div class="clock" id="clock">--:--:--</div><div class="sub" id="date"></div></div></div>
+ <div class="fresh"><span id="mkt" class="pill p-closed">…</span><span id="fr"><span class="dot d-n"></span>loading…</span><button id="ref" style="margin-left:auto">Refresh</button></div>
+</header>
+<div class="note" id="note"><b>Grades = how many sources agree. Not a proven edge.</b> <span id="tallytxt"></span>
+ <small>Information, not financial advice. Paper only. No orders are placed from here. Levels and entries are computed from real data; “contract” prices are estimates, so re-check the real quote before using any of it.</small></div>
+<div id="banners"></div>
+<div class="tabs" id="tabs"><div class="tab on" data-p="setups">Setups</div><div class="tab" data-p="levels">Levels</div><div class="tab" data-p="sources">Sources</div></div>
+
+<div class="pane on" id="p-setups">
+ <div class="bar" id="fGrade"><span class="lbl">Grade</span></div>
+ <div class="bar" id="fStatus"><span class="lbl">Status</span></div>
+ <div class="bar"><span class="lbl">Side</span><span id="fDir" style="display:contents"></span><select id="fTk" aria-label="Ticker"></select><span class="chip" id="fCap">Contract ≤ $70</span></div>
+ <div class="count" id="count"></div>
+ <div class="grid" id="grid"></div>
+</div>
+<div class="pane" id="p-levels"><div class="count" id="lvmeta"></div><div class="grid" id="lvgrid"></div></div>
+<div class="pane" id="p-sources"><div id="srcs"></div></div>
+<footer id="foot"></footer>
+
+<script>
+"use strict";
+const POLL_MS=60000, TZ="America/Chicago";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const f2=x=>x==null?"–":(+x).toFixed(2);
+let DATA=null, STAT=null, LASTFETCH=0, FETCH_ERR=null;
+const F=Object.assign({grade:"all",status:"all",dir:"all",tk:"all",cap:false},JSON.parse(localStorage.getItem("ss_filters")||"{}"));
+const OPEN=new Set();
+const saveF=()=>localStorage.setItem("ss_filters",JSON.stringify(F));
+const ctParts=(d=new Date())=>{const p={};new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",second:"2-digit",hour12:false}).formatToParts(d).forEach(x=>p[x.type]=x.value);return p};
+const fmtCT=iso=>{if(!iso)return "–";const p=ctParts(new Date(iso));const h=+p.hour%24;return `${p.weekday} ${p.month} ${p.day} ${((h+11)%12)+1}:${p.minute} ${h<12?"AM":"PM"} CT`};
+const clockCT=()=>{const p=ctParts();return {t:`${String(+p.hour%24).padStart(2,"0")}:${p.minute}:${p.second}`,d:`${p.weekday} ${p.month} ${p.day} · Central`,wd:p.weekday,mins:(+p.hour%24)*60+(+p.minute)}};
+function mktState(){const c=clockCT();if(c.wd==="Sat"||c.wd==="Sun")return["CLOSED · weekend","p-closed"];if(c.mins<510)return["PRE-MARKET","p-warn"];if(c.mins<900)return["MARKET OPEN","p-open"];return["AFTER HOURS","p-closed"]}
+const inWindow=()=>{const c=clockCT();return !(c.wd==="Sat"||c.wd==="Sun")&&c.mins>=510&&c.mins<900};
+const ago=sec=>{sec=Math.max(0,Math.round(sec));if(sec<90)return sec+" s";if(sec<5400)return Math.round(sec/60)+" min";if(sec<172800)return (sec/3600).toFixed(1)+" h";return Math.round(sec/86400)+" d"};
+
+async function getJSON(u){const r=await fetch(u+(u.includes("?")?"&":"?")+"t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error(u+" HTTP "+r.status);return r.json()}
+async function load(){
+  try{const [d,s]=await Promise.all([getJSON("data.json"),getJSON("status.json").catch(()=>null)]);DATA=d;STAT=s;LASTFETCH=Date.now();FETCH_ERR=null}
+  catch(e){FETCH_ERR=String(e.message||e)}
+  render();
+}
+function header(){
+  const c=clockCT();$("clock").textContent=c.t;$("date").textContent=c.d;
+  const [m,cls]=mktState();const mk=$("mkt");mk.textContent=m;mk.className="pill "+cls;
+  const fr=$("fr");if(!DATA){fr.innerHTML=`<span class="dot d-r"></span>${FETCH_ERR?esc(FETCH_ERR):"loading…"}`;return}
+  const me=DATA.meta,gen=new Date(me.generated_at),age=(Date.now()-gen)/1000,live=me.mode==="live",win=inWindow();
+  let dot="d-n",txt="";
+  if(live&&win){dot=age<240?"d-g":age<600?"d-y":"d-r";txt=`<b>LIVE</b> · bars through ${esc(fmtCT(me.as_of))} · scan ${ago(age)} ago`+(age>=600?" · <b>STALE</b>":"")}
+  else{dot=win?"d-y":"d-n";txt=`<b>As of ${esc(fmtCT(me.as_of))}</b> · refreshed ${esc(fmtCT(me.generated_at))} (${ago(age)} ago)`+(win&&me.mode!=="live"?" · not live yet":"")}
+  fr.innerHTML=`<span class="dot ${dot}"></span>${txt}`;
+}
+function banners(){
+  const b=[];
+  if(FETCH_ERR)b.push(`<div class="banner b-bad"><b>Can’t reach the data file</b> (${esc(FETCH_ERR)}). Showing the last copy loaded${LASTFETCH?" "+ago((Date.now()-LASTFETCH)/1000)+" ago":""}.</div>`);
+  if(STAT&&inWindow()){
+    const hb=(Date.now()/1000)-STAT.hb;
+    if(hb>900)b.push(`<div class="banner b-bad"><b>Collector not running?</b> No heartbeat for ${ago(hb)} during market hours. Data below may be stale.</div>`);
+    else if(STAT.last_error&&STAT.consecutive_fails>0)b.push(`<div class="banner b-bad"><b>Last scan failed</b> (${STAT.consecutive_fails}×): ${esc(STAT.last_error)}. Showing the previous scan.</div>`);
+  }
+  if(DATA&&DATA.meta.mode!=="live")b.push(`<div class="banner b-info"><b>Recap mode.</b> FIRED = already happened last session (results shown). WATCH = ${esc(DATA.meta.next_session||"next session")} plans; they only count after a confirming 5-min close.</div>`);
+  $("banners").innerHTML=b.join("");
+}
+function tally(){
+  if(!DATA){return}
+  const t=DATA.tally||{},g=k=>{const x=t["tradable|"+k];return x&&x.n?`${k} ${x.avg_r>0?"+":"−"}${Math.abs(x.avg_r).toFixed(2)}R <span class="mut">(n=${x.n})</span>`:null};
+  const parts=["A+","A","B"].map(g).filter(Boolean);
+  $("tallytxt").innerHTML=parts.length?`${DATA.meta.mode==="live"?"Today’s":"Last session’s"} triggered, tradable setups (underlying only, before costs): ${parts.join(" · ")}. A higher grade has <b>not</b> meant better results so far, and the samples are tiny.`:"No scored setups yet.";
+}
+const GR=g=>g==="A+"?"Ap":g;
+const dotsFor=s=>`<span class="dots">${s.sources.map(x=>`<i class="${x.status==="n/a"?"na":x.status}"></i>`).join("")}</span>`;
+function priceBox(s){
+  const lab=(k,v,sub,cls)=>`<div class="${cls}"><span>${k}</span><b>${f2(v)}</b>${sub?`<small>${sub}</small>`:""}</div>`;
+  return `<div class="px">${lab("Entry",s.entry,"",'e')}${lab("Stop",s.stop,s.risk!=null?"risk "+f2(s.risk):"",'s')}${lab("R:R",s.rr,"",'r').replace(f2(s.rr),(s.rr==null?"–":(+s.rr).toFixed(1)+":1"))}${lab("TP1",s.tp1,s.tp1_kind?String(s.tp1_kind).replace(/_/g," ").toLowerCase():"",'t')}${lab("TP2",s.tp2,s.tp2_kind?String(s.tp2_kind).replace(/_/g," ").toLowerCase():"",'t')}<div><span>Taps</span><b>${s.taps??"–"}</b><small>${s.taps>=3?"3rd+ tap: skip":"of level"}</small></div></div>`;
+}
+function contractBox(s){
+  const c=s.contract;if(!c||c.status==="n/a"||!c.label)return `<div class="k none">No priced contract (no usable option chain data for this ticker).</div>`;
+  const dollars=c.est_dollars!=null?`~$${c.est_dollars}`:"–";
+  const over=!c.fits_cap||c.status==="over cap";
+  return `<div class="k ${over?"over":""}"><b>${esc(c.label)}</b> · est ${dollars}/contract ${over?"· <b>over the $70 cap</b>":"· within $70"}${c.quote?` · last quote ${esc(c.quote)}`:""}<small>${esc(c.basis||"")}</small></div>`;
+}
+function card(s){
+  const up=s.direction==="call",open=OPEN.has(s.id);
+  const o=s.outcome;let out="";
+  if(o){const win=/TP2|TP1 hit/.test(o.result);out=`<div class="out ${win?"win":o.result==="STOP"||o.result==="TP1 then stop"?"loss":""}"><b>Result (underlying only):</b> ${esc(o.result)}${o.r!=null?` · ${o.r>0?"+":""}${o.r}R`:""}${o.at?` at ${esc(o.at)}`:""}<br><span class="mut">${esc(o.note||"")} · no fees or slippage</span></div>`}
+  const pr=s.pass_reasons.length?`<div class="pr"><b>Pass:</b> ${esc(s.pass_reasons.join("; "))}</div>`:"";
+  const when=s.trigger_time?`fired ${esc(fmtCT(s.trigger_time).replace(/^\w+ \w+ \d+ /,""))}${s.age_min!=null?` (${s.age_min} min before as-of)`:""}`:"waiting for confirming 5-min close";
+  return `<div class="card g-${GR(s.grade)} ${s.status==="PASS"?"pass":""}" data-id="${esc(s.id)}">
+   <div class="top"><div><span class="tk">${esc(s.ticker)}</span><span class="tag gr-${GR(s.grade)}">${esc(s.grade)}</span><span class="tag st-${s.status}">${s.status}</span></div>
+    <div class="dir ${up?"up":"dn"}">${up?"▲ CALL":"▼ PUT"}</div></div>
+   <div class="stype">${esc(s.setup_name)} · ${esc(s.level_name)} ${f2(s.level)}</div>
+   <div class="trig"><b>Trigger:</b> ${esc(s.trigger)}</div>
+   ${priceBox(s)}${contractBox(s)}
+   <div class="ag" data-t="${esc(s.id)}">${dotsFor(s)}<b>Sources ${s.agree}/${s.total} agree</b>${s.against?`<span class="dn">· ${s.against} against</span>`:""}<span class="chev">${open?"hide ▲":"details ▼"}</span></div>
+   <div class="srcs ${open?"on":""}">${s.sources.map(x=>`<div class="src ${x.status==="n/a"?"na":x.status}"><span class="m">${x.status==="agree"?"✓":x.status==="oppose"?"✗":x.status==="neutral"?"~":"–"}</span><div><b>${esc(x.name)}</b> <span>${esc(x.read)}</span></div></div>`).join("")}</div>
+   ${out}${pr}
+   <div class="foot"><span>${when}</span></div></div>`;
+}
+const SOL={FIRED:0,WATCH:1,PASS:2},SOR={WATCH:0,FIRED:1,PASS:2};
+function setups(){
+  if(!DATA)return;const S=DATA.setups;
+  const cnt=(k,v)=>S.filter(s=>k==="grade"?s.grade===v:s.status===v).length;
+  const chips=(el,key,items)=>{const e=$(el);e.querySelectorAll(".chip").forEach(x=>x.remove());items.forEach(([v,l,n])=>{const c=document.createElement("span");c.className="chip"+(F[key]===v?" on":"");c.innerHTML=`${l}${n!=null?`<small>${n}</small>`:""}`;c.onclick=()=>{F[key]=v;saveF();setups()};e.appendChild(c)})};
+  chips("fGrade","grade",[["all","All",S.length],["A+","A+",cnt("grade","A+")],["A","A",cnt("grade","A")],["B","B",cnt("grade","B")]]);
+  chips("fStatus","status",[["all","All"],["FIRED","FIRED",cnt("status","FIRED")],["WATCH","WATCH",cnt("status","WATCH")],["PASS","PASS",cnt("status","PASS")]]);
+  const fd=$("fDir");fd.innerHTML="";[["all","Both"],["call","▲ Calls"],["put","▼ Puts"]].forEach(([v,l])=>{const c=document.createElement("span");c.className="chip"+(F.dir===v?" on":"");c.textContent=l;c.onclick=()=>{F.dir=v;saveF();setups()};fd.appendChild(c)});
+  const tks=["all",...[...new Set(S.map(s=>s.ticker))]];const sel=$("fTk");sel.innerHTML=tks.map(t=>`<option value="${t}" ${F.tk===t?"selected":""}>${t==="all"?"All tickers":t}</option>`).join("");sel.onchange=()=>{F.tk=sel.value;saveF();setups()};
+  $("fCap").className="chip"+(F.cap?" on":"");$("fCap").onclick=()=>{F.cap=!F.cap;saveF();setups()};
+  let L=S.filter(s=>(F.grade==="all"||s.grade===F.grade)&&(F.status==="all"?s.status!=="PASS":s.status===F.status)&&(F.dir==="all"||s.direction===F.dir)&&(F.tk==="all"||s.ticker===F.tk)&&(!F.cap||(s.contract&&s.contract.fits_cap)));
+  const G={"A+":0,A:1,B:2};
+  L.sort((a,b)=>(DATA.meta.mode==="live"?SOL:SOR)[a.status]-(DATA.meta.mode==="live"?SOL:SOR)[b.status]||G[a.grade]-G[b.grade]||b.agree-a.agree||(b.rr||0)-(a.rr||0));
+  $("count").textContent=`${L.length} setup${L.length===1?"":"s"} shown`+(F.status==="all"?` · ${cnt("status","PASS")} PASS hidden (tap PASS for why)`:"");
+  $("grid").innerHTML=L.length?L.map(card).join(""):`<div class="empty" style="grid-column:1/-1">No setups match these filters.${DATA.meta.mode==="live"?" Nothing has confirmed yet — a quiet board is normal.":""}</div>`;
+  $("grid").querySelectorAll(".ag").forEach(a=>a.onclick=()=>{const id=a.dataset.t;OPEN.has(id)?OPEN.delete(id):OPEN.add(id);setups()});
+}
+function ladder(k,t){
+  const rows=[];const add=(p,n,cls)=>{if(p!=null)rows.push({p:+p,n,cls:cls||""})};
+  add(t.gamma_flip,"GEX flip","gx");add(t.walls&&t.walls.call_wall_oi,"call wall (OI)","gx");add(t.walls&&t.walls.put_wall_oi,"put wall (OI)","gx");
+  if(t.king!=null)add(t.king,"King node"+(t.king_sign?` (${t.king_sign} γ)`:""),"w3");
+  add(t.pdh,"PDH");add(t.pdl,"PDL");add(t.pdc,"prior close");add(t.vwap,"VWAP");add(t.ema8,"5m 8 EMA");add(t.or_high,"OR high");add(t.or_low,"OR low");add(t.hod,"HOD");add(t.lod,"LOD");add(t.onh,"overnight high");add(t.onl,"overnight low");
+  const ALIAS=/^(prior-day (high|low)|prior close|opening-range (high|low)|overnight (high|low)|premarket (high|low)|king node|call wall|put wall|vwap|high of day|low of day)/i;
+  (t.levels||[]).forEach(l=>{if(rows.some(r=>Math.abs(r.p-l.price)<.015&&(ALIAS.test(l.name)||r.n.toLowerCase().startsWith(l.name.toLowerCase().slice(0,5)))))return;add(l.price,l.name,l.w>=3?"w3":"")});
+  rows.push({p:+t.spot,n:"SPOT",cls:"spot"});
+  rows.sort((a,b)=>b.p-a.p);
+  const near=rows.filter(r=>r.cls==="spot"||Math.abs(r.p-t.spot)<=Math.max(1.6*(t.adr10||t.spot*.01),t.spot*.012));
+  const merged=[];near.forEach(r=>{const m=merged[merged.length-1];if(m&&r.cls!=="spot"&&m.cls!=="spot"&&Math.abs(m.p-r.p)<.015){m.n+=" · "+r.n;m.cls=m.cls||r.cls}else merged.push({...r})});
+  return merged.map(r=>`<div class="row ${r.cls}"><em>${esc(r.n)}</em><b>${r.p.toFixed(2)}</b></div>`).join("");
+}
+function levels(){
+  if(!DATA)return;const T=DATA.tickers,ks=Object.keys(T);
+  $("lvmeta").textContent=DATA.meta.mode==="live"?`Levels as of the last completed 5-minute bar (${fmtCT(DATA.meta.as_of)}).`:`Spot and bars as of ${fmtCT(DATA.meta.as_of)}. Levels are set for the ${DATA.meta.next_session||"next"} session (last session’s range + the next expiry’s open interest).`;
+  $("lvgrid").innerHTML=ks.map(k=>{const t=T[k],gex=t.net_gex_usd;const kv=(l,v,s)=>`<div><span>${l}</span><b>${v}</b>${s?`<br><small>${s}</small>`:""}</div>`;
+   const fx=x=>x==null?"–":(+x).toFixed(2);
+   return `<div class="card lv"><h3>${esc(k)} <span class="mut" style="font-size:14px;font-weight:600">${fx(t.spot)}</span></h3><div class="meta">${esc(t.trend_detail||"")}${t.nsetups!=null?` · ${t.nsetups} setups`:""}</div>
+   <div class="kv">${kv("VWAP",fx(t.vwap))}${kv("PDH",fx(t.pdh))}${kv("PDL",fx(t.pdl))}${kv("OR high",fx(t.or_high))}${kv("OR low",fx(t.or_low))}${kv("King",fx(t.king),t.king_sign?t.king_sign+" γ":"")}
+   ${kv("GEX flip",fx(t.gamma_flip),t.gamma_flip==null?"n/a (estimate)":"estimate")}${kv("Call wall",fx(t.walls&&t.walls.call_wall_oi),"by OI")}${kv("Put wall",fx(t.walls&&t.walls.put_wall_oi),"by OI")}</div>
+   ${gex!=null?`<div class="meta">Net GEX est. ${gex<0?"−":"+"}$${Math.abs(gex/1e9).toFixed(2)}B (${gex<0?"dealers short gamma: moves tend to extend":"dealers long gamma: moves tend to mean-revert"}) · flat-IV estimate, not TerraShade</div>`:`<div class="meta">No option-chain GEX for this ticker (price levels only).</div>`}
+   <div class="lad">${ladder(k,t)}</div></div>`}).join("");
+}
+function sourcesTab(){
+  if(!DATA)return;const sv=DATA.saved,al=sv.alertsify,ts=sv.terrashade;
+  let h=`<div class="sec">Data sources</div><div class="box"><table><tr><th>Source</th><th>Status</th></tr>`+DATA.sources.map(x=>`<tr><td><b>${esc(x.name)}</b><br><span class="mut">${esc(x.detail)}</span>${x.as_of&&String(x.as_of).includes("T")?`<br><span class="mut">as of ${esc(fmtCT(x.as_of))}</span>`:""}</td><td class="s-${String(x.status).split(" ")[0]}">${esc(x.status)}</td></tr>`).join("")+`</table></div>`;
+  const a=al.reads&&al.reads.SPY;
+  h+=`<div class="sec">Alertsify — saved read <span class="mut" style="font-weight:400;font-size:12px">(as of ${esc(fmtCT(al.as_of))}; not live)</span></div><div class="box">`;
+  h+=a?`<p><b>SPY</b> spot ${f2(a.spot)} · ${esc(a.gamma_regime)} · flip ${f2(a.gamma_flip)} · put wall ${f2(a.put_wall)} (${esc(a.put_wall_note||"")}) · call wall ${f2(a.call_wall)} · lean <b>${esc(a.lean)}</b></p><p class="mut">Expected range ${f2(a.expected_range&&a.expected_range[0])}–${f2(a.expected_range&&a.expected_range[1])}${a.touch_odds?" · touch odds "+Object.entries(a.touch_odds).map(([k,v])=>k+": "+Math.round(v*100)+"%").join(", "):""}</p>`+(a.dark_pool?`<p class="mut">Dark pool: ${a.dark_pool.map(d=>`$${(d.usd/1e6).toFixed(0)}M @ ${d.price} (${esc(d.note)})`).join("; ")}</p>`:"")+(a.put_flow?`<p class="mut">Put flow: ${a.put_flow.map(f=>`${f.expiry.slice(5)} ${f.strike}${f.type} $${(f.usd/1e6).toFixed(1)}M`).join("; ")}</p>`:""):`<p class="mut">No saved read.</p>`;
+  h+=`<p class="mut">${esc(al.provenance||"")}. This dashboard never logs into Alertsify; it only reads this saved file, and it ages out as the days pass.</p></div>`;
+  h+=`<div class="sec">TerraShade — saved cards <span class="mut" style="font-weight:400;font-size:12px">(as of ${esc(fmtCT(ts.as_of))}${ts.stale?" · STALE":""})</span></div><div class="box"><p>${esc(ts.stale_reason||"")}</p><p class="mut">Context only, not graded. The site and API are never called from here.</p></div>`;
+  $("srcs").innerHTML=h;
+}
+function foot(){$("foot").innerHTML=`Setup Scanner ${DATA?esc(DATA.meta.version):""} · polls data every 60 s · <b>Grades = source agreement, not a proven edge.</b> ${DATA?esc(DATA.caveat):""} Contains no account, position or balance data.`}
+function render(){header();banners();tally();setups();levels();sourcesTab();foot()}
+function showTab(n){document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.dataset.p===n));document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id==="p-"+n));window.scrollTo(0,0)}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showTab(t.dataset.p));
+if(["levels","sources"].includes(location.hash.slice(1)))showTab(location.hash.slice(1));
+$("ref").onclick=()=>load();
+setInterval(header,1000);setInterval(load,POLL_MS);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-LASTFETCH>20000)load()});
+load();
+</script></body></html>
