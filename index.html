@@ -83,12 +83,31 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px 8px
 .box p{margin:4px 0}.mut{color:var(--mut)}
 footer{padding:6px 16px 28px;font-size:11.5px;color:var(--mut);line-height:1.5}
 @media (min-width:900px){.grid{grid-template-columns:repeat(auto-fill,minmax(380px,1fr))}header{padding-left:24px;padding-right:24px}.note,.banner,.bar,.tabs,.grid,.count,.sec,.box{margin-left:max(14px,calc((100vw - 1500px)/2));margin-right:max(14px,calc((100vw - 1500px)/2))}.bar,.tabs,.grid,.count{padding-left:0;padding-right:0}.grid{margin-top:0}}
+
+.sbox{position:relative;margin-top:8px}
+.sbox input{width:100%;background:#12121c;color:#fff;border:1px solid #3a4d63;border-radius:10px;padding:10px 40px 10px 36px;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;outline:none;-webkit-appearance:none}
+.sbox input:focus{border-color:#4b97cc}.sbox input::placeholder{text-transform:none;font-weight:500;letter-spacing:0;color:#7c8aa0}
+.sbox .mag{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.6;font-size:14px;pointer-events:none}
+.sbox .x{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:32px;height:32px;padding:0;border-radius:50%;background:#2a3d52;color:#fff;font-size:16px;line-height:32px;display:none}
+.sbox.has .x{display:block}
+.sug{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#1f1f2e;border:1px solid #3a4d63;border-radius:10px;max-height:46vh;overflow:auto;display:none;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.sug.on{display:block}.sug div{padding:10px 14px;display:flex;justify-content:space-between;border-bottom:1px solid #2c2c42;cursor:pointer;font-size:15px}
+.sug div:last-child{border:0}.sug div:active,.sug div.hl{background:#25253a}.sug b{letter-spacing:.5px}.sug span{color:var(--mut);font-size:13px}
+.sum{margin:10px 14px 0;padding:12px 13px;border-radius:12px;background:#1b2530;border:1px solid #2f4a63}
+.sum h2{margin:0 0 2px;font-size:17px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}.sum h2 small{font-size:12px;color:var(--mut);font-weight:500}
+.sum .gc{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.sum .gc span{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:#25253a;border:1px solid #33334c}
+.sum .lbl2{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin:8px 0 3px}
+.sum .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 8px;font-size:12px}.sum .mini span{display:block;color:var(--mut);font-size:11px}.sum .mini b{font-size:14px}
+.sum .none{color:#f3e3b5;font-size:13.5px}
+@media (min-width:900px){.sum{margin-left:max(14px,calc((100vw - 1500px)/2));margin-right:max(14px,calc((100vw - 1500px)/2))}}
 </style></head><body>
 <header>
  <div class="hr"><div><h1>Setup Scanner</h1><div class="sub">SPY · QQQ · watchlist · paper only</div></div>
  <div style="text-align:right"><div class="clock" id="clock">--:--:--</div><div class="sub" id="date"></div></div></div>
+ <div class="sbox" id="sbox"><span class="mag">🔍</span><input id="q" type="search" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="Search ticker (e.g. QQQ)" aria-label="Search ticker"><button class="x" id="qx" aria-label="Clear search" type="button">✕</button><div class="sug" id="sug"></div></div>
  <div class="fresh"><span id="mkt" class="pill p-closed">…</span><span id="fr"><span class="dot d-n"></span>loading…</span><button id="ref" style="margin-left:auto">Refresh</button></div>
 </header>
+<div class="sum" id="sum" style="display:none"></div>
 <div class="note" id="note"><b>Grades = how many sources agree. Not a proven edge.</b> <span id="tallytxt"></span>
  <small>Information, not financial advice. Paper only. No orders are placed from here. Levels and entries are computed from real data; “contract” prices are estimates, so re-check the real quote before using any of it.</small></div>
 <div id="banners"></div>
@@ -114,6 +133,8 @@ const f2=x=>x==null?"–":(+x).toFixed(2);
 let DATA=null, STAT=null, LASTFETCH=0, FETCH_ERR=null;
 const F=Object.assign({grade:"all",status:"all",dir:"all",tk:"all",cap:false},JSON.parse(localStorage.getItem("ss_filters")||"{}"));
 const OPEN=new Set();
+const cleanT=s=>String(s||"").toUpperCase().replace(/[^A-Z.\-]/g,"").slice(0,8);
+let Q=cleanT(new URLSearchParams(location.search).get("t")||localStorage.getItem("ss_search")||"");
 const saveF=()=>localStorage.setItem("ss_filters",JSON.stringify(F));
 const ctParts=(d=new Date())=>{const p={};new Intl.DateTimeFormat("en-US",{timeZone:TZ,weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",second:"2-digit",hour12:false}).formatToParts(d).forEach(x=>p[x.type]=x.value);return p};
 const fmtCT=iso=>{if(!iso)return "–";const p=ctParts(new Date(iso));const h=+p.hour%24;return `${p.weekday} ${p.month} ${p.day} ${((h+11)%12)+1}:${p.minute} ${h<12?"AM":"PM"} CT`};
@@ -192,12 +213,12 @@ function setups(){
   chips("fGrade","grade",[["all","All",S.length],["A+","A+",cnt("grade","A+")],["A","A",cnt("grade","A")],["B","B",cnt("grade","B")]]);
   chips("fStatus","status",[["all","All"],["FIRED","FIRED",cnt("status","FIRED")],["WATCH","WATCH",cnt("status","WATCH")],["PASS","PASS",cnt("status","PASS")]]);
   const fd=$("fDir");fd.innerHTML="";[["all","Both"],["call","▲ Calls"],["put","▼ Puts"]].forEach(([v,l])=>{const c=document.createElement("span");c.className="chip"+(F.dir===v?" on":"");c.textContent=l;c.onclick=()=>{F.dir=v;saveF();setups()};fd.appendChild(c)});
-  const tks=["all",...[...new Set(S.map(s=>s.ticker))]];const sel=$("fTk");sel.innerHTML=tks.map(t=>`<option value="${t}" ${F.tk===t?"selected":""}>${t==="all"?"All tickers":t}</option>`).join("");sel.onchange=()=>{F.tk=sel.value;saveF();setups()};
+  const tks=["all",...[...new Set(S.map(s=>s.ticker))]];const sel=$("fTk");sel.disabled=!!Q;sel.style.opacity=Q?.45:1;sel.innerHTML=tks.map(t=>`<option value="${t}" ${F.tk===t?"selected":""}>${t==="all"?"All tickers":t}</option>`).join("");sel.onchange=()=>{F.tk=sel.value;saveF();setups()};
   $("fCap").className="chip"+(F.cap?" on":"");$("fCap").onclick=()=>{F.cap=!F.cap;saveF();setups()};
-  let L=S.filter(s=>(F.grade==="all"||s.grade===F.grade)&&(F.status==="all"?s.status!=="PASS":s.status===F.status)&&(F.dir==="all"||s.direction===F.dir)&&(F.tk==="all"||s.ticker===F.tk)&&(!F.cap||(s.contract&&s.contract.fits_cap)));
+  let L=S.filter(s=>(F.grade==="all"||s.grade===F.grade)&&(F.status==="all"?s.status!=="PASS":s.status===F.status)&&(F.dir==="all"||s.direction===F.dir)&&(Q?s.ticker===Q:(F.tk==="all"||s.ticker===F.tk))&&(!F.cap||(s.contract&&s.contract.fits_cap)));
   const G={"A+":0,A:1,B:2};
   L.sort((a,b)=>(DATA.meta.mode==="live"?SOL:SOR)[a.status]-(DATA.meta.mode==="live"?SOL:SOR)[b.status]||G[a.grade]-G[b.grade]||b.agree-a.agree||(b.rr||0)-(a.rr||0));
-  $("count").textContent=`${L.length} setup${L.length===1?"":"s"} shown`+(F.status==="all"?` · ${cnt("status","PASS")} PASS hidden (tap PASS for why)`:"");
+  $("count").textContent=`${L.length} setup${L.length===1?"":"s"} shown`+(Q?` for ${Q}`:"")+(F.status==="all"?` · ${cnt("status","PASS")} PASS hidden (tap PASS for why)`:"");
   $("grid").innerHTML=L.length?L.map(card).join(""):`<div class="empty" style="grid-column:1/-1">No setups match these filters.${DATA.meta.mode==="live"?" Nothing has confirmed yet — a quiet board is normal.":""}</div>`;
   $("grid").querySelectorAll(".ag").forEach(a=>a.onclick=()=>{const id=a.dataset.t;OPEN.has(id)?OPEN.delete(id):OPEN.add(id);setups()});
 }
@@ -215,8 +236,9 @@ function ladder(k,t){
   return merged.map(r=>`<div class="row ${r.cls}"><em>${esc(r.n)}</em><b>${r.p.toFixed(2)}</b></div>`).join("");
 }
 function levels(){
-  if(!DATA)return;const T=DATA.tickers,ks=Object.keys(T);
+  if(!DATA)return;const T=DATA.tickers,ks=Object.keys(T).filter(k=>!Q||k===Q);
   $("lvmeta").textContent=DATA.meta.mode==="live"?`Levels as of the last completed 5-minute bar (${fmtCT(DATA.meta.as_of)}).`:`Spot and bars as of ${fmtCT(DATA.meta.as_of)}. Levels are set for the ${DATA.meta.next_session||"next"} session (last session’s range + the next expiry’s open interest).`;
+  if(Q&&!ks.length){$("lvgrid").innerHTML=`<div class="empty" style="grid-column:1/-1">${esc(Q)} isn’t on the scan list yet.</div>`;return}
   $("lvgrid").innerHTML=ks.map(k=>{const t=T[k],gex=t.net_gex_usd;const kv=(l,v,s)=>`<div><span>${l}</span><b>${v}</b>${s?`<br><small>${s}</small>`:""}</div>`;
    const fx=x=>x==null?"–":(+x).toFixed(2);
    return `<div class="card lv"><h3>${esc(k)} <span class="mut" style="font-size:14px;font-weight:600">${fx(t.spot)}</span></h3><div class="meta">${esc(t.trend_detail||"")}${t.nsetups!=null?` · ${t.nsetups} setups`:""}</div>
@@ -233,10 +255,71 @@ function sourcesTab(){
   h+=a?`<p><b>SPY</b> spot ${f2(a.spot)} · ${esc(a.gamma_regime)} · flip ${f2(a.gamma_flip)} · put wall ${f2(a.put_wall)} (${esc(a.put_wall_note||"")}) · call wall ${f2(a.call_wall)} · lean <b>${esc(a.lean)}</b></p><p class="mut">Expected range ${f2(a.expected_range&&a.expected_range[0])}–${f2(a.expected_range&&a.expected_range[1])}${a.touch_odds?" · touch odds "+Object.entries(a.touch_odds).map(([k,v])=>k+": "+Math.round(v*100)+"%").join(", "):""}</p>`+(a.dark_pool?`<p class="mut">Dark pool: ${a.dark_pool.map(d=>`$${(d.usd/1e6).toFixed(0)}M @ ${d.price} (${esc(d.note)})`).join("; ")}</p>`:"")+(a.put_flow?`<p class="mut">Put flow: ${a.put_flow.map(f=>`${f.expiry.slice(5)} ${f.strike}${f.type} $${(f.usd/1e6).toFixed(1)}M`).join("; ")}</p>`:""):`<p class="mut">No saved read.</p>`;
   h+=`<p class="mut">${esc(al.provenance||"")}. This dashboard never logs into Alertsify; it only reads this saved file, and it ages out as the days pass.</p></div>`;
   h+=`<div class="sec">TerraShade — saved cards <span class="mut" style="font-weight:400;font-size:12px">(as of ${esc(fmtCT(ts.as_of))}${ts.stale?" · STALE":""})</span></div><div class="box"><p>${esc(ts.stale_reason||"")}</p><p class="mut">Context only, not graded. The site and API are never called from here.</p></div>`;
+  if(Q){const b=best(Q),r=al.reads&&al.reads[Q];
+    let x=`<div class="sec">${esc(Q)} — source reads</div><div class="box">`;
+    if(!(Q in DATA.tickers))x+=`<p>${esc(Q)} isn’t on the scan list yet, so no source reads exist for it.</p>`;
+    else{x+=b?`<p class="mut">From the best setup shown above (${esc(b.setup_name)}, ${b.direction==="call"?"call":"put"}, grade ${esc(b.grade)}):</p>`+b.sources.map(s=>`<p><b>${esc(s.name)}</b> · <span class="s-${s.status==="agree"?"ok":s.status==="oppose"?"error":"stale"}">${esc(s.status)}</span><br><span class="mut">${esc(s.read)}</span></p>`).join(""):`<p>No setups for ${esc(Q)} in this scan.</p>`;
+      x+=r?`<p><b>Alertsify (saved)</b> · spot ${f2(r.spot)} · ${esc(r.gamma_regime)} · lean <b>${esc(r.lean)}</b></p>`:`<p class="mut">No saved Alertsify read for ${esc(Q)} (only index reads are saved).</p>`}
+    x+=`<p class="mut">Filtered to ${esc(Q)}. Clear the search to see every source and the full table below.</p></div>`;
+    h=x+h.replace(/<div class="sec">Alertsify[\s\S]*?<\/div><\/div>(?=<div class="sec">TerraShade)/,"");}
   $("srcs").innerHTML=h;
 }
 function foot(){$("foot").innerHTML=`Setup Scanner ${DATA?esc(DATA.meta.version):""} · polls data every 60 s · <b>Grades = source agreement, not a proven edge.</b> ${DATA?esc(DATA.caveat):""} Contains no account, position or balance data.`}
-function render(){header();banners();tally();setups();levels();sourcesTab();foot()}
+
+const SOLb={FIRED:0,WATCH:1,PASS:2},SORb={WATCH:0,FIRED:1,PASS:2},GB={"A+":0,A:1,B:2};
+function best(tk){if(!DATA)return null;const o=DATA.meta.mode==="live"?SOLb:SORb;const L=DATA.setups.filter(s=>s.ticker===tk);L.sort((a,b)=>o[a.status]-o[b.status]||GB[a.grade]-GB[b.grade]||b.agree-a.agree||(b.rr||0)-(a.rr||0));return L[0]||null}
+function summary(){
+  const el=$("sum");$("sbox").classList.toggle("has",!!Q||$("q").value.length>0);
+  if(!Q||!DATA){el.style.display="none";return}
+  el.style.display="block";const T=DATA.tickers,names=Object.keys(T);
+  if(!(Q in T)){el.innerHTML=`<h2>${esc(Q)}</h2><div class="none"><b>${esc(Q)} isn’t on the scan list yet.</b> This page only shows tickers the scanner already covers; it doesn’t look anything up elsewhere.</div><div class="lbl2">Scanned now</div><div class="gc">${names.map(n=>`<span style="cursor:pointer" data-pick="${esc(n)}">${esc(n)}</span>`).join("")}</div>`;
+    el.querySelectorAll("[data-pick]").forEach(x=>x.onclick=()=>setQ(x.dataset.pick));return}
+  const t=T[Q],S=DATA.setups.filter(s=>s.ticker===Q),g=k=>S.filter(s=>s.grade===k).length,b=best(Q);
+  const age=(Date.now()-new Date(DATA.meta.generated_at))/1000,fx=x=>x==null?"–":(+x).toFixed(2);
+  const kv=(l,v)=>`<div><span>${l}</span><b>${v}</b></div>`;
+  const st=k=>S.filter(s=>s.status===k).length;
+  let bs="";
+  if(b){const up=b.direction==="call";bs=`<div class="lbl2">Best setup · ${esc(b.setup_name)} · ${esc(b.level_name)} ${f2(b.level)}</div><div style="margin-bottom:4px"><span class="tag gr-${GR(b.grade)}">${esc(b.grade)}</span> <span class="tag st-${b.status}">${b.status}</span> <b class="${up?"up":"dn"}" style="font-size:13px">${up?"▲ CALL":"▼ PUT"}</b> <span class="mut" style="font-size:12px">${b.agree}/${b.total} sources agree</span></div>${priceBox(b)}${contractBox(b)}${b.status==="PASS"?`<div class="pr"><b>Pass:</b> ${esc(b.pass_reasons.join("; "))}</div>`:""}`}
+  else bs=`<div class="none" style="margin-top:6px">No setups for ${esc(Q)} in this scan.</div>`;
+  el.innerHTML=`<h2><span>${esc(Q)} <span style="font-weight:600">${fx(t.spot)}</span> <small>${esc(t.trend||"")}</small></span><small>data ${ago(age)} old</small></h2>
+   <div class="mut" style="font-size:12px">Bars through ${esc(fmtCT(DATA.meta.as_of))} · scanned ${esc(fmtCT(DATA.meta.generated_at))}</div>
+   <div class="gc"><span>${S.length} setups</span><span>A+ ${g("A+")}</span><span>A ${g("A")}</span><span>B ${g("B")}</span><span>${st("FIRED")} fired</span><span>${st("WATCH")} watch</span></div>
+   ${bs}
+   <div class="lbl2">Key levels</div><div class="mini">${kv("VWAP",fx(t.vwap))}${kv("8 EMA",fx(t.ema8))}${kv("King",fx(t.king))}${kv("PDH",fx(t.pdh))}${kv("PDL",fx(t.pdl))}${kv("OR hi/lo",fx(t.or_high)+" / "+fx(t.or_low))}${kv("Call wall",fx(t.walls&&t.walls.call_wall_oi))}${kv("Put wall",fx(t.walls&&t.walls.put_wall_oi))}${kv("GEX flip",fx(t.gamma_flip))}</div>`;
+}
+let HL=-1;
+function sugList(){
+  const v=cleanT($("q").value),names=DATA?Object.keys(DATA.tickers):[];
+  const m=v?[...names.filter(n=>n.startsWith(v)),...names.filter(n=>!n.startsWith(v)&&n.includes(v))]:names;
+  return m.slice(0,12);
+}
+function showSug(){
+  const el=$("sug"),L=sugList(),v=cleanT($("q").value);
+  if(!DATA||(!L.length&&!v)){el.classList.remove("on");return}
+  el.innerHTML=L.length?L.map((n,i)=>{const t=DATA.tickers[n],bs=best(n);return `<div data-n="${esc(n)}" class="${i===HL?"hl":""}"><b>${esc(n)}</b><span>${t&&t.spot!=null?(+t.spot).toFixed(2):""}${bs?" · "+esc(bs.grade):""}</span></div>`}).join(""):`<div data-n="${esc(v)}"><b>${esc(v)}</b><span>not on the scan list</span></div>`;
+  el.classList.add("on");
+  el.querySelectorAll("div").forEach(d=>d.onmousedown=e=>{e.preventDefault();setQ(d.dataset.n)});
+  el.querySelectorAll("div").forEach(d=>d.ontouchend=e=>{e.preventDefault();setQ(d.dataset.n)});
+}
+function setQ(v){
+  Q=cleanT(v);$("q").value=Q;$("sug").classList.remove("on");$("q").blur();HL=-1;
+  try{Q?localStorage.setItem("ss_search",Q):localStorage.removeItem("ss_search")}catch(e){}
+  try{const u=new URL(location.href);Q?u.searchParams.set("t",Q):u.searchParams.delete("t");history.replaceState(null,"",u.pathname+u.search+u.hash)}catch(e){}
+  render();window.scrollTo(0,0);
+}
+const qi=$("q");qi.value=Q;if(Q){try{localStorage.setItem("ss_search",Q)}catch(e){}}
+qi.addEventListener("input",()=>{qi.value=cleanT(qi.value);HL=-1;$("sbox").classList.toggle("has",qi.value.length>0);showSug()});
+qi.addEventListener("focus",()=>{qi.select();showSug()});
+qi.addEventListener("blur",()=>setTimeout(()=>$("sug").classList.remove("on"),150));
+qi.addEventListener("keydown",e=>{
+  const L=sugList();
+  if(e.key==="ArrowDown"){HL=Math.min(L.length-1,HL+1);showSug();e.preventDefault()}
+  else if(e.key==="ArrowUp"){HL=Math.max(-1,HL-1);showSug();e.preventDefault()}
+  else if(e.key==="Escape"){qi.blur()}
+  else if(e.key==="Enter"){e.preventDefault();const v=cleanT(qi.value);setQ(HL>=0?L[HL]:(DATA&&DATA.tickers[v]?v:(L.length?L[0]:v)))}
+});
+$("qx").onclick=()=>setQ("");
+function render(){header();banners();tally();setups();levels();sourcesTab();summary();foot()}
 function showTab(n){document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.dataset.p===n));document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id==="p-"+n));window.scrollTo(0,0)}
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showTab(t.dataset.p));
 if(["levels","sources"].includes(location.hash.slice(1)))showTab(location.hash.slice(1));
