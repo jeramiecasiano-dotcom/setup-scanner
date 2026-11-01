@@ -84,6 +84,10 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px 8px
 footer{padding:6px 16px 28px;font-size:11.5px;color:var(--mut);line-height:1.5}
 @media (min-width:900px){.grid{grid-template-columns:repeat(auto-fill,minmax(380px,1fr))}header{padding-left:24px;padding-right:24px}.note,.banner,.bar,.tabs,.grid,.count,.sec,.box{margin-left:max(14px,calc((100vw - 1500px)/2));margin-right:max(14px,calc((100vw - 1500px)/2))}.bar,.tabs,.grid,.count{padding-left:0;padding-right:0}.grid{margin-top:0}}
 
+.tier{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:1px 6px;border-radius:999px;margin-left:5px;vertical-align:2px;text-transform:uppercase}
+.t-fast{background:#1f6f4a;color:#d8ffe9}.t-slow{background:#3a4660;color:#cfd8ee}
+.age{font-size:11px;color:var(--mut);font-weight:600;margin-left:4px}
+.more{grid-column:1/-1;text-align:center;padding:10px}.more button{padding:9px 18px;font-size:14px}
 .sbox{position:relative;margin-top:8px}
 .sbox input{width:100%;background:#12121c;color:#fff;border:1px solid #3a4d63;border-radius:10px;padding:10px 40px 10px 36px;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;outline:none;-webkit-appearance:none}
 .sbox input:focus{border-color:#4b97cc}.sbox input::placeholder{text-transform:none;font-weight:500;letter-spacing:0;color:#7c8aa0}
@@ -104,7 +108,7 @@ footer{padding:6px 16px 28px;font-size:11.5px;color:var(--mut);line-height:1.5}
 <header>
  <div class="hr"><div><h1>Setup Scanner</h1><div class="sub">SPY · QQQ · watchlist · paper only</div></div>
  <div style="text-align:right"><div class="clock" id="clock">--:--:--</div><div class="sub" id="date"></div></div></div>
- <div class="sbox" id="sbox"><span class="mag">🔍</span><input id="q" type="search" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="Search ticker (e.g. QQQ)" aria-label="Search ticker"><button class="x" id="qx" aria-label="Clear search" type="button">✕</button><div class="sug" id="sug"></div></div>
+ <div class="sbox" id="sbox"><span class="mag">🔍</span><input id="q" type="search" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="Search ticker (e.g. CAT, QQQ)" aria-label="Search ticker"><button class="x" id="qx" aria-label="Clear search" type="button">✕</button><div class="sug" id="sug"></div></div>
  <div class="fresh"><span id="mkt" class="pill p-closed">…</span><span id="fr"><span class="dot d-n"></span>loading…</span><button id="ref" style="margin-left:auto">Refresh</button></div>
 </header>
 <div class="sum" id="sum" style="display:none"></div>
@@ -143,6 +147,12 @@ function mktState(){const c=clockCT();if(c.wd==="Sat"||c.wd==="Sun")return["CLOS
 const inWindow=()=>{const c=clockCT();return !(c.wd==="Sat"||c.wd==="Sun")&&c.mins>=510&&c.mins<900};
 const ago=sec=>{sec=Math.max(0,Math.round(sec));if(sec<90)return sec+" s";if(sec<5400)return Math.round(sec/60)+" min";if(sec<172800)return (sec/3600).toFixed(1)+" h";return Math.round(sec/86400)+" d"};
 
+const tierName=t=>t==="fast"?"fast":t==="slow"?"15-min":"";
+const tierBadge=t=>t?`<span class="tier t-${t}" title="${t==="fast"?"fast tier: scanned every 2 min":"slow tier: scanned every 15 min"}">${tierName(t)}</span>`:"";
+const ageOf=iso=>iso?ago((Date.now()-new Date(iso))/1000):"";
+const ageTag=iso=>iso?`<span class="age">${ageOf(iso)} old</span>`:"";
+const nameSet=()=>DATA?[...new Set([...Object.keys(DATA.tickers),...Object.keys(DATA.meta.unscanned||{})])]:[];
+const SHOWN={s:60,l:40};
 async function getJSON(u){const r=await fetch(u+(u.includes("?")?"&":"?")+"t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error(u+" HTTP "+r.status);return r.json()}
 async function load(){
   try{const [d,s]=await Promise.all([getJSON("data.json"),getJSON("status.json").catch(()=>null)]);DATA=d;STAT=s;LASTFETCH=Date.now();FETCH_ERR=null}
@@ -153,7 +163,7 @@ function header(){
   const c=clockCT();$("clock").textContent=c.t;$("date").textContent=c.d;
   const [m,cls]=mktState();const mk=$("mkt");mk.textContent=m;mk.className="pill "+cls;
   const fr=$("fr");if(!DATA){fr.innerHTML=`<span class="dot d-r"></span>${FETCH_ERR?esc(FETCH_ERR):"loading…"}`;return}
-  const me=DATA.meta,gen=new Date(me.generated_at),age=(Date.now()-gen)/1000,live=me.mode==="live",win=inWindow();
+  const me=DATA.meta,gen=new Date(((me.tiers&&me.tiers.fast)||me).generated_at),age=(Date.now()-gen)/1000,live=me.mode==="live",win=inWindow();
   let dot="d-n",txt="";
   if(live&&win){dot=age<240?"d-g":age<600?"d-y":"d-r";txt=`<b>LIVE</b> · bars through ${esc(fmtCT(me.as_of))} · scan ${ago(age)} ago`+(age>=600?" · <b>STALE</b>":"")}
   else{dot=win?"d-y":"d-n";txt=`<b>As of ${esc(fmtCT(me.as_of))}</b> · refreshed ${esc(fmtCT(me.generated_at))} (${ago(age)} ago)`+(win&&me.mode!=="live"?" · not live yet":"")}
@@ -167,6 +177,7 @@ function banners(){
     if(hb>900)b.push(`<div class="banner b-bad"><b>Collector not running?</b> No heartbeat for ${ago(hb)} during market hours. Data below may be stale.</div>`);
     else if(STAT.last_error&&STAT.consecutive_fails>0)b.push(`<div class="banner b-bad"><b>Last scan failed</b> (${STAT.consecutive_fails}×): ${esc(STAT.last_error)}. Showing the previous scan.</div>`);
   }
+  if(STAT&&inWindow()&&STAT.slow&&STAT.slow.consecutive_fails>0)b.push(`<div class="banner b-info"><b>15-min tier is failing</b> (${STAT.slow.consecutive_fails}×): ${esc(STAT.slow.last_error||"")}. The fast tier is unaffected; 15-min tickers keep their last scan (see the data age on each).</div>`);
   if(DATA&&DATA.meta.mode!=="live")b.push(`<div class="banner b-info"><b>Recap mode.</b> FIRED = already happened last session (results shown). WATCH = ${esc(DATA.meta.next_session||"next session")} plans; they only count after a confirming 5-min close.</div>`);
   $("banners").innerHTML=b.join("");
 }
@@ -183,7 +194,7 @@ function priceBox(s){
   return `<div class="px">${lab("Entry",s.entry,"",'e')}${lab("Stop",s.stop,s.risk!=null?"risk "+f2(s.risk):"",'s')}${lab("R:R",s.rr,"",'r').replace(f2(s.rr),(s.rr==null?"–":(+s.rr).toFixed(1)+":1"))}${lab("TP1",s.tp1,s.tp1_kind?String(s.tp1_kind).replace(/_/g," ").toLowerCase():"",'t')}${lab("TP2",s.tp2,s.tp2_kind?String(s.tp2_kind).replace(/_/g," ").toLowerCase():"",'t')}<div><span>Taps</span><b>${s.taps??"–"}</b><small>${s.taps>=3?"3rd+ tap: skip":"of level"}</small></div></div>`;
 }
 function contractBox(s){
-  const c=s.contract;if(!c||c.status==="n/a"||!c.label)return `<div class="k none">No priced contract (no usable option chain data for this ticker).</div>`;
+  const c=s.contract;if(!c||c.status==="n/a"||!c.label)return `<div class="k none">No priced contract: option chains are only fetched when a setup is near its trigger (or none was usable for this ticker).</div>`;
   const dollars=c.est_dollars!=null?`~$${c.est_dollars}`:"–";
   const over=!c.fits_cap||c.status==="over cap";
   return `<div class="k ${over?"over":""}"><b>${esc(c.label)}</b> · est ${dollars}/contract ${over?"· <b>over the $70 cap</b>":"· within $70"}${c.quote?` · last quote ${esc(c.quote)}`:""}<small>${esc(c.basis||"")}</small></div>`;
@@ -195,15 +206,15 @@ function card(s){
   const pr=s.pass_reasons.length?`<div class="pr"><b>Pass:</b> ${esc(s.pass_reasons.join("; "))}</div>`:"";
   const when=s.trigger_time?`fired ${esc(fmtCT(s.trigger_time).replace(/^\w+ \w+ \d+ /,""))}${s.age_min!=null?` (${s.age_min} min before as-of)`:""}`:"waiting for confirming 5-min close";
   return `<div class="card g-${GR(s.grade)} ${s.status==="PASS"?"pass":""}" data-id="${esc(s.id)}">
-   <div class="top"><div><span class="tk">${esc(s.ticker)}</span><span class="tag gr-${GR(s.grade)}">${esc(s.grade)}</span><span class="tag st-${s.status}">${s.status}</span></div>
+   <div class="top"><div><span class="tk">${esc(s.ticker)}</span><span class="tag gr-${GR(s.grade)}">${esc(s.grade)}</span><span class="tag st-${s.status}">${s.status}</span>${tierBadge(s.tier)}</div>
     <div class="dir ${up?"up":"dn"}">${up?"▲ CALL":"▼ PUT"}</div></div>
    <div class="stype">${esc(s.setup_name)} · ${esc(s.level_name)} ${f2(s.level)}</div>
    <div class="trig"><b>Trigger:</b> ${esc(s.trigger)}</div>
    ${priceBox(s)}${contractBox(s)}
    <div class="ag" data-t="${esc(s.id)}">${dotsFor(s)}<b>Sources ${s.agree}/${s.total} agree</b>${s.against?`<span class="dn">· ${s.against} against</span>`:""}<span class="chev">${open?"hide ▲":"details ▼"}</span></div>
-   <div class="srcs ${open?"on":""}">${s.sources.map(x=>`<div class="src ${x.status==="n/a"?"na":x.status}"><span class="m">${x.status==="agree"?"✓":x.status==="oppose"?"✗":x.status==="neutral"?"~":"–"}</span><div><b>${esc(x.name)}</b> <span>${esc(x.read)}</span></div></div>`).join("")}</div>
+   <div class="srcs ${open?"on":""}">${s.sources_trimmed?`<div class="src na"><span class="m">–</span><div><span>Per-source reads were trimmed from this PASS/low-priority setup to keep the data file small.</span></div></div>`:""}${s.sources.map(x=>`<div class="src ${x.status==="n/a"?"na":x.status}"><span class="m">${x.status==="agree"?"✓":x.status==="oppose"?"✗":x.status==="neutral"?"~":"–"}</span><div><b>${esc(x.name)}</b> <span>${esc(x.read)}</span></div></div>`).join("")}</div>
    ${out}${pr}
-   <div class="foot"><span>${when}</span></div></div>`;
+   <div class="foot"><span>${when}</span><span>${tierBadge(s.tier)}${ageTag(s.scanned_at)}</span></div></div>`;
 }
 const SOL={FIRED:0,WATCH:1,PASS:2},SOR={WATCH:0,FIRED:1,PASS:2};
 function setups(){
@@ -219,7 +230,9 @@ function setups(){
   const G={"A+":0,A:1,B:2};
   L.sort((a,b)=>(DATA.meta.mode==="live"?SOL:SOR)[a.status]-(DATA.meta.mode==="live"?SOL:SOR)[b.status]||G[a.grade]-G[b.grade]||b.agree-a.agree||(b.rr||0)-(a.rr||0));
   $("count").textContent=`${L.length} setup${L.length===1?"":"s"} shown`+(Q?` for ${Q}`:"")+(F.status==="all"?` · ${cnt("status","PASS")} PASS hidden (tap PASS for why)`:"");
-  $("grid").innerHTML=L.length?L.map(card).join(""):`<div class="empty" style="grid-column:1/-1">No setups match these filters.${DATA.meta.mode==="live"?" Nothing has confirmed yet — a quiet board is normal.":""}</div>`;
+  const LM=Q?L.length:SHOWN.s;
+  $("grid").innerHTML=L.length?L.slice(0,LM).map(card).join("")+(L.length>LM?`<div class="more"><button id="moreS">Show ${Math.min(60,L.length-LM)} more (${L.length-LM} not shown)</button></div>`:""):`<div class="empty" style="grid-column:1/-1">No setups match these filters.${DATA.meta.mode==="live"?" Nothing has confirmed yet — a quiet board is normal.":""}</div>`;
+  const mb=$("moreS");if(mb)mb.onclick=()=>{SHOWN.s+=60;setups()};
   $("grid").querySelectorAll(".ag").forEach(a=>a.onclick=()=>{const id=a.dataset.t;OPEN.has(id)?OPEN.delete(id):OPEN.add(id);setups()});
 }
 function ladder(k,t){
@@ -238,14 +251,16 @@ function ladder(k,t){
 function levels(){
   if(!DATA)return;const T=DATA.tickers,ks=Object.keys(T).filter(k=>!Q||k===Q);
   $("lvmeta").textContent=DATA.meta.mode==="live"?`Levels as of the last completed 5-minute bar (${fmtCT(DATA.meta.as_of)}).`:`Spot and bars as of ${fmtCT(DATA.meta.as_of)}. Levels are set for the ${DATA.meta.next_session||"next"} session (last session’s range + the next expiry’s open interest).`;
-  if(Q&&!ks.length){$("lvgrid").innerHTML=`<div class="empty" style="grid-column:1/-1">${esc(Q)} isn’t on the scan list yet.</div>`;return}
+  if(Q&&!ks.length){$("lvgrid").innerHTML=`<div class="empty" style="grid-column:1/-1">${esc(Q)} ${(DATA.meta.unscanned||{})[Q]?"has no usable data right now ("+esc(DATA.meta.unscanned[Q])+")":"isn’t on the Themes List"}.</div>`;return}
+  const LMl=Q?ks.length:SHOWN.l,more=ks.length>LMl;ks.splice(LMl);
   $("lvgrid").innerHTML=ks.map(k=>{const t=T[k],gex=t.net_gex_usd;const kv=(l,v,s)=>`<div><span>${l}</span><b>${v}</b>${s?`<br><small>${s}</small>`:""}</div>`;
    const fx=x=>x==null?"–":(+x).toFixed(2);
-   return `<div class="card lv"><h3>${esc(k)} <span class="mut" style="font-size:14px;font-weight:600">${fx(t.spot)}</span></h3><div class="meta">${esc(t.trend_detail||"")}${t.nsetups!=null?` · ${t.nsetups} setups`:""}</div>
+   return `<div class="card lv"><h3>${esc(k)} <span class="mut" style="font-size:14px;font-weight:600">${fx(t.spot)}</span>${tierBadge(t.tier)}${ageTag(t.scanned_at)}</h3><div class="meta">${esc(t.trend_detail||"")}${t.nsetups!=null?` · ${t.nsetups} setups`:""}</div>
    <div class="kv">${kv("VWAP",fx(t.vwap))}${kv("PDH",fx(t.pdh))}${kv("PDL",fx(t.pdl))}${kv("OR high",fx(t.or_high))}${kv("OR low",fx(t.or_low))}${kv("King",fx(t.king),t.king_sign?t.king_sign+" γ":"")}
    ${kv("GEX flip",fx(t.gamma_flip),t.gamma_flip==null?"n/a (estimate)":"estimate")}${kv("Call wall",fx(t.walls&&t.walls.call_wall_oi),"by OI")}${kv("Put wall",fx(t.walls&&t.walls.put_wall_oi),"by OI")}</div>
    ${gex!=null?`<div class="meta">Net GEX est. ${gex<0?"−":"+"}$${Math.abs(gex/1e9).toFixed(2)}B (${gex<0?"dealers short gamma: moves tend to extend":"dealers long gamma: moves tend to mean-revert"}) · flat-IV estimate, not TerraShade</div>`:`<div class="meta">No option-chain GEX for this ticker (price levels only).</div>`}
-   <div class="lad">${ladder(k,t)}</div></div>`}).join("");
+   <div class="lad">${ladder(k,t)}</div></div>`}).join("")+(more?`<div class="more"><button id="moreL">Show 40 more</button></div>`:"");
+  const ml=$("moreL");if(ml)ml.onclick=()=>{SHOWN.l+=40;levels()};
 }
 function sourcesTab(){
   if(!DATA)return;const sv=DATA.saved,al=sv.alertsify,ts=sv.terrashade;
@@ -257,14 +272,14 @@ function sourcesTab(){
   h+=`<div class="sec">TerraShade — saved cards <span class="mut" style="font-weight:400;font-size:12px">(as of ${esc(fmtCT(ts.as_of))}${ts.stale?" · STALE":""})</span></div><div class="box"><p>${esc(ts.stale_reason||"")}</p><p class="mut">Context only, not graded. The site and API are never called from here.</p></div>`;
   if(Q){const b=best(Q),r=al.reads&&al.reads[Q];
     let x=`<div class="sec">${esc(Q)} — source reads</div><div class="box">`;
-    if(!(Q in DATA.tickers))x+=`<p>${esc(Q)} isn’t on the scan list yet, so no source reads exist for it.</p>`;
+    if(!(Q in DATA.tickers))x+=`<p>${esc(Q)} ${(DATA.meta.unscanned||{})[Q]?"has no usable data right now, so no source reads exist for it.":"isn’t on the Themes List, so no source reads exist for it."}</p>`;
     else{x+=b?`<p class="mut">From the best setup shown above (${esc(b.setup_name)}, ${b.direction==="call"?"call":"put"}, grade ${esc(b.grade)}):</p>`+b.sources.map(s=>`<p><b>${esc(s.name)}</b> · <span class="s-${s.status==="agree"?"ok":s.status==="oppose"?"error":"stale"}">${esc(s.status)}</span><br><span class="mut">${esc(s.read)}</span></p>`).join(""):`<p>No setups for ${esc(Q)} in this scan.</p>`;
       x+=r?`<p><b>Alertsify (saved)</b> · spot ${f2(r.spot)} · ${esc(r.gamma_regime)} · lean <b>${esc(r.lean)}</b></p>`:`<p class="mut">No saved Alertsify read for ${esc(Q)} (only index reads are saved).</p>`}
     x+=`<p class="mut">Filtered to ${esc(Q)}. Clear the search to see every source and the full table below.</p></div>`;
     h=x+h.replace(/<div class="sec">Alertsify[\s\S]*?<\/div><\/div>(?=<div class="sec">TerraShade)/,"");}
   $("srcs").innerHTML=h;
 }
-function foot(){$("foot").innerHTML=`Setup Scanner ${DATA?esc(DATA.meta.version):""} · polls data every 60 s · <b>Grades = source agreement, not a proven edge.</b> ${DATA?esc(DATA.caveat):""} Contains no account, position or balance data.`}
+function foot(){$("foot").innerHTML=`Setup Scanner ${DATA?esc(DATA.meta.version):""} · polls data every 60 s · <b>Fast tier</b>: SPY, QQQ + ${DATA&&DATA.meta.fast_list?DATA.meta.fast_list.length-2:18} most liquid names, every 2 min · <b>15-min tier</b>: all ${DATA?nameSet().length:""} Themes List tickers, every 15 min (each card shows its tier and data age) · <b>Grades = source agreement, not a proven edge.</b> ${DATA?esc(DATA.caveat):""} Contains no account, position or balance data.`}
 
 const SOLb={FIRED:0,WATCH:1,PASS:2},SORb={WATCH:0,FIRED:1,PASS:2},GB={"A+":0,A:1,B:2};
 function best(tk){if(!DATA)return null;const o=DATA.meta.mode==="live"?SOLb:SORb;const L=DATA.setups.filter(s=>s.ticker===tk);L.sort((a,b)=>o[a.status]-o[b.status]||GB[a.grade]-GB[b.grade]||b.agree-a.agree||(b.rr||0)-(a.rr||0));return L[0]||null}
@@ -272,31 +287,33 @@ function summary(){
   const el=$("sum");$("sbox").classList.toggle("has",!!Q||$("q").value.length>0);
   if(!Q||!DATA){el.style.display="none";return}
   el.style.display="block";const T=DATA.tickers,names=Object.keys(T);
-  if(!(Q in T)){el.innerHTML=`<h2>${esc(Q)}</h2><div class="none"><b>${esc(Q)} isn’t on the scan list yet.</b> This page only shows tickers the scanner already covers; it doesn’t look anything up elsewhere.</div><div class="lbl2">Scanned now</div><div class="gc">${names.map(n=>`<span style="cursor:pointer" data-pick="${esc(n)}">${esc(n)}</span>`).join("")}</div>`;
+  if(!(Q in T)){const un=(DATA.meta.unscanned||{})[Q];
+    el.innerHTML=un?`<h2>${esc(Q)}</h2><div class="none"><b>${esc(Q)} is on the Themes List but has no usable data right now.</b> ${esc(un)}. It is retried on every scan.</div>`
+      :`<h2>${esc(Q)}</h2><div class="none"><b>${esc(Q)} isn’t on the Themes List.</b> This page only shows the ${names.length} tickers the scanner covers; it doesn’t look anything up elsewhere.</div><div class="lbl2">Examples</div><div class="gc">${["SPY","QQQ","NVDA","CAT","AAPL","TSLA"].filter(n=>n in T).map(n=>`<span style="cursor:pointer" data-pick="${esc(n)}">${esc(n)}</span>`).join("")}</div>`;
     el.querySelectorAll("[data-pick]").forEach(x=>x.onclick=()=>setQ(x.dataset.pick));return}
   const t=T[Q],S=DATA.setups.filter(s=>s.ticker===Q),g=k=>S.filter(s=>s.grade===k).length,b=best(Q);
-  const age=(Date.now()-new Date(DATA.meta.generated_at))/1000,fx=x=>x==null?"–":(+x).toFixed(2);
+  const age=(Date.now()-new Date(t.scanned_at||DATA.meta.generated_at))/1000,fx=x=>x==null?"–":(+x).toFixed(2);
   const kv=(l,v)=>`<div><span>${l}</span><b>${v}</b></div>`;
   const st=k=>S.filter(s=>s.status===k).length;
   let bs="";
-  if(b){const up=b.direction==="call";bs=`<div class="lbl2">Best setup · ${esc(b.setup_name)} · ${esc(b.level_name)} ${f2(b.level)}</div><div style="margin-bottom:4px"><span class="tag gr-${GR(b.grade)}">${esc(b.grade)}</span> <span class="tag st-${b.status}">${b.status}</span> <b class="${up?"up":"dn"}" style="font-size:13px">${up?"▲ CALL":"▼ PUT"}</b> <span class="mut" style="font-size:12px">${b.agree}/${b.total} sources agree</span></div>${priceBox(b)}${contractBox(b)}${b.status==="PASS"?`<div class="pr"><b>Pass:</b> ${esc(b.pass_reasons.join("; "))}</div>`:""}`}
+  if(b){const up=b.direction==="call";bs=`<div class="lbl2">Best setup · ${esc(b.setup_name)} · ${esc(b.level_name)} ${f2(b.level)}</div><div style="margin-bottom:4px"><span class="tag gr-${GR(b.grade)}">${esc(b.grade)}</span> <span class="tag st-${b.status}">${b.status}</span> <b class="${up?"up":"dn"}" style="font-size:13px">${up?"▲ CALL":"▼ PUT"}</b> <span class="mut" style="font-size:12px">${b.agree}/${b.total} sources agree</span>${tierBadge(b.tier)}${ageTag(b.scanned_at)}</div>${priceBox(b)}${contractBox(b)}${b.status==="PASS"?`<div class="pr"><b>Pass:</b> ${esc(b.pass_reasons.join("; "))}</div>`:""}`}
   else bs=`<div class="none" style="margin-top:6px">No setups for ${esc(Q)} in this scan.</div>`;
-  el.innerHTML=`<h2><span>${esc(Q)} <span style="font-weight:600">${fx(t.spot)}</span> <small>${esc(t.trend||"")}</small></span><small>data ${ago(age)} old</small></h2>
-   <div class="mut" style="font-size:12px">Bars through ${esc(fmtCT(DATA.meta.as_of))} · scanned ${esc(fmtCT(DATA.meta.generated_at))}</div>
+  el.innerHTML=`<h2><span>${esc(Q)} <span style="font-weight:600">${fx(t.spot)}</span> <small>${esc(t.trend||"")}</small>${tierBadge(t.tier)}</span><small>data ${ago(age)} old</small></h2>
+   <div class="mut" style="font-size:12px">${t.tier==="slow"?"15-min tier (scanned every 15 min)":t.tier==="fast"?"Fast tier (scanned every 2 min)":""} · bars through ${esc(fmtCT(t.last_bar_end||DATA.meta.as_of))} · scanned ${esc(fmtCT(t.scanned_at||DATA.meta.generated_at))}</div>
    <div class="gc"><span>${S.length} setups</span><span>A+ ${g("A+")}</span><span>A ${g("A")}</span><span>B ${g("B")}</span><span>${st("FIRED")} fired</span><span>${st("WATCH")} watch</span></div>
    ${bs}
    <div class="lbl2">Key levels</div><div class="mini">${kv("VWAP",fx(t.vwap))}${kv("8 EMA",fx(t.ema8))}${kv("King",fx(t.king))}${kv("PDH",fx(t.pdh))}${kv("PDL",fx(t.pdl))}${kv("OR hi/lo",fx(t.or_high)+" / "+fx(t.or_low))}${kv("Call wall",fx(t.walls&&t.walls.call_wall_oi))}${kv("Put wall",fx(t.walls&&t.walls.put_wall_oi))}${kv("GEX flip",fx(t.gamma_flip))}</div>`;
 }
 let HL=-1;
 function sugList(){
-  const v=cleanT($("q").value),names=DATA?Object.keys(DATA.tickers):[];
+  const v=cleanT($("q").value),names=nameSet();
   const m=v?[...names.filter(n=>n.startsWith(v)),...names.filter(n=>!n.startsWith(v)&&n.includes(v))]:names;
   return m.slice(0,12);
 }
 function showSug(){
   const el=$("sug"),L=sugList(),v=cleanT($("q").value);
   if(!DATA||(!L.length&&!v)){el.classList.remove("on");return}
-  el.innerHTML=L.length?L.map((n,i)=>{const t=DATA.tickers[n],bs=best(n);return `<div data-n="${esc(n)}" class="${i===HL?"hl":""}"><b>${esc(n)}</b><span>${t&&t.spot!=null?(+t.spot).toFixed(2):""}${bs?" · "+esc(bs.grade):""}</span></div>`}).join(""):`<div data-n="${esc(v)}"><b>${esc(v)}</b><span>not on the scan list</span></div>`;
+  el.innerHTML=L.length?L.map((n,i)=>{const t=DATA.tickers[n],bs=best(n);return `<div data-n="${esc(n)}" class="${i===HL?"hl":""}"><b>${esc(n)}</b><span>${t?`${t.spot!=null?(+t.spot).toFixed(2):""}${bs?" · "+esc(bs.grade):""}${tierBadge(t.tier)}${ageTag(t.scanned_at)}`:"no data"}</span></div>`}).join(""):`<div data-n="${esc(v)}"><b>${esc(v)}</b><span>not on the Themes List</span></div>`;
   el.classList.add("on");
   el.querySelectorAll("div").forEach(d=>d.onmousedown=e=>{e.preventDefault();setQ(d.dataset.n)});
   el.querySelectorAll("div").forEach(d=>d.ontouchend=e=>{e.preventDefault();setQ(d.dataset.n)});
@@ -316,7 +333,7 @@ qi.addEventListener("keydown",e=>{
   if(e.key==="ArrowDown"){HL=Math.min(L.length-1,HL+1);showSug();e.preventDefault()}
   else if(e.key==="ArrowUp"){HL=Math.max(-1,HL-1);showSug();e.preventDefault()}
   else if(e.key==="Escape"){qi.blur()}
-  else if(e.key==="Enter"){e.preventDefault();const v=cleanT(qi.value);setQ(HL>=0?L[HL]:(DATA&&DATA.tickers[v]?v:(L.length?L[0]:v)))}
+  else if(e.key==="Enter"){e.preventDefault();const v=cleanT(qi.value);setQ(HL>=0?L[HL]:(DATA&&nameSet().includes(v)?v:(L.length?L[0]:v)))}
 });
 $("qx").onclick=()=>setQ("");
 function render(){header();banners();tally();setups();levels();sourcesTab();summary();foot()}
